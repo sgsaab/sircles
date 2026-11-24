@@ -23,6 +23,7 @@ const run=s=>w.eval(s);
 (async()=>{
  await sleep(100);
  ok(errs.length===0,'no script errors on load '+errs.join('|'));
+ ok($('#sb').textContent==='Shuffle setup'&&$('#sb').nextElementSibling.id==='fb','Shuffle setup sits next to Fit in the map toolbar');
  ok($('#app').firstElementChild.id==='side','side panel is positioned on the left');
  const resizeHandle=$('#sr');
  ev(resizeHandle,'pointerdown',{clientX:340});ev(resizeHandle,'pointermove',{clientX:440});ev(resizeHandle,'pointerup',{clientX:440});
@@ -281,6 +282,12 @@ const run=s=>w.eval(s);
  ok(Math.abs(run('byId.L.x-byId.M.x'))>=100||Math.abs(run('byId.L.y-byId.M.y'))>=20,'overlapping name labels are pushed apart');
  run(`S.people=Array.from({length:40},(_,i)=>({id:'r'+i,name:'Person'+i,tier:1+i%5}));S.links=[];commit();sim.stop()`);for(let i=0;i<200;i++)run('sim.tick()');run('fit(0)');
  ok(run('nodes.every(n=>{const x=T.x+n.x*T.k,y=T.y+n.y*T.k;return x>=0&&x<=W&&y>=0&&y<=H})'),'Fit brings every name into view (zoom '+run('T.k').toFixed(2)+')');
+ run("fixPerson('r0',333,444);sim.stop()");
+ $('#sb').click();
+ ok(run('S.people.every(person=>getPos(person)==null)'),'Shuffle releases saved manual positions');
+ ok(run('nodes.every(node=>node.id===ctr||(node.fx==null&&node.fy==null))'),'Shuffle leaves everyone free to move (except the center)');
+ ok(run('nodes.filter(node=>node.id!==ctr&&typeof node.tier==="number").every(node=>Math.abs(Math.hypot(node.x,node.y)-R(node.tier))<1e-6)'),'Shuffle initializes tiered people on their correct formula rings');
+ ok(run('byId.r0.x!==333&&byId.r0.y!==444'),'Shuffle generates a different layout');
  // ---- center becomes You ----
  mk(['X','Y','Z'],[['X','Y',3],['Y','Z',2]]);run(`S.people.find(p=>p.id==='X').tier=2;S.people.find(p=>p.id==='Y').tier=1;commit();setLinkMode(false);sim.stop()`);
  run(`byId.Y.x=120;byId.Y.y=0;byId.Y.hw=30`);ev($('#c'),'click',{clientX:run('T.x+120*T.k'),clientY:run('T.y')});

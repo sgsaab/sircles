@@ -679,6 +679,28 @@ function relax(id) {
   render();
   sim.alpha(0.4).restart();
 }
+function shuffleSetup() {
+  if (!S.people.length) return;
+  S.people.forEach(clearPos);
+  nodes.forEach((node) => {
+    if (node.id === ctr) return;
+    const angle = Math.random() * Math.PI * 2;
+    const radius =
+      typeof node.tier === "number" ? R(node.tier) : 220 + Math.random() * 120;
+    node.x = Math.cos(angle) * radius;
+    node.y = Math.sin(angle) * radius;
+    node.vx = 0;
+    node.vy = 0;
+    node.fx = null;
+    node.fy = null;
+  });
+  userView = false;
+  save();
+  dirty = true;
+  render();
+  sim.alpha(1).restart();
+  draw();
+}
 function setLink(a, b, t) {
   if (a === "you" || b === "you") {
     const p = S.people.find((p) => p.id === (a === "you" ? b : a));
@@ -1189,4 +1211,5 @@ $("#pb").onclick = () => {
   showPanel();
 };
 $("#fb").onclick = () => fit(500);
+$("#sb").onclick = shuffleSetup;
 $("#vb").onclick = () => setCenter("you");

@@ -12,6 +12,7 @@ This project handles the following:
 - Center on anyone to see the map from their point of view
 - Shift-click to define a relationship or select and drag a group together
 - Move, drag, and relax to place or release people
+- Shuffle setup to explore a fresh formula-aligned layout without pinning people
 - Text-entry relationship tiers (including decimals, with colors assigned by whole-number band), plus romantic and ended relationship buttons
 - Guided setup reveals the social map one ring at a time
 - Appearance controls for tier colors, ring-number visibility, name size, line thickness, and ring spacing
