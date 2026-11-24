@@ -91,7 +91,7 @@ function exportCSV() {
   const u = URL.createObjectURL(new Blob([csvText()], { type: "text/csv" })),
     a = document.createElement("a");
   a.href = u;
-  a.download = "social-map.csv";
+  a.download = "sircles.csv";
   a.click();
   dirty = false;
   render();

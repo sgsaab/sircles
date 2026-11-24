@@ -1,10 +1,14 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>TODO</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Sircles</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div id="app">
@@ -16,16 +20,28 @@
         </div>
         <div id="bd"></div>
       </div>
-      <div id="sr" role="separator" aria-orientation="vertical" aria-label="Resize sidebar" aria-valuenow="340" tabindex="0"></div>
+      <div
+        id="sr"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        aria-valuenow="340"
+        tabindex="0"
+      ></div>
       <div id="cv">
         <canvas id="c"></canvas>
         <div id="tb">
           <button id="lm">Link people</button>
-          <button id="pb" style="display:none">Panel</button>
+          <button id="pb" style="display: none">Panel</button>
           <button id="rb">Guided setup</button>
-          <button id="sb" title="Shuffle into a new layout and release saved positions">Shuffle setup</button>
+          <button
+            id="sb"
+            title="Shuffle into a new layout and release saved positions"
+          >
+            Shuffle
+          </button>
           <button id="fb">Fit</button>
-          <button id="vb" style="display:none"></button>
+          <button id="vb" style="display: none"></button>
         </div>
         <div id="bn"></div>
         <div id="pk"></div>
@@ -34,7 +50,7 @@
     </div>
     <div id="ob"></div>
     <div id="dl"></div>
-    <input type="file" id="fi" accept=".csv" hidden>
+    <input type="file" id="fi" accept=".csv" hidden />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <script src="app.js"></script>
     <script src="data.js"></script>

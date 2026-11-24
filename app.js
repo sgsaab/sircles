@@ -6,6 +6,8 @@ const $ = (s) => document.querySelector(s),
     );
 const TC0 = "#d7301f",
   TC1 = "#2f5fd0",
+  STORAGE_KEY = "sircles",
+  LEGACY_STORAGE_KEY = "todo-circles",
   newG = () => ({
     n: 1,
     names: {},
@@ -115,7 +117,7 @@ function ask(msg, btns = ["OK"]) {
 function save() {
   try {
     localStorage.setItem(
-      "todo-circles",
+      STORAGE_KEY,
       JSON.stringify({
         v: 2,
         S,
@@ -130,7 +132,9 @@ function save() {
 }
 function load() {
   try {
-    const d = JSON.parse(localStorage.getItem("todo-circles"));
+    const saved = localStorage.getItem(STORAGE_KEY),
+      migrated = !saved,
+      d = JSON.parse(saved || localStorage.getItem(LEGACY_STORAGE_KEY));
     if (!d || !d.S || !d.S.people.length) return false;
     S = d.S;
     G = Object.assign(newG(), d.G);
@@ -144,6 +148,7 @@ function load() {
     prev = Object.fromEntries(
       Object.entries(d.P || {}).map(([k, v]) => [k, new Set(v)]),
     );
+    if (migrated) save();
     return true;
   } catch (e) {
     return false;

@@ -1,7 +1,7 @@
 {
-  "name": "social-map",
+  "name": "sircles",
   "version": "1.0.0",
-  "description": "A no-backend web app that maps out your social life: closeness tiers, auto-detected friend groups, CSV import/export.",
+  "description": "A browser-based social map for exploring closeness and relationships.",
   "private": true,
   "scripts": {
     "format": "prettier --write app.js data.js ui.js",

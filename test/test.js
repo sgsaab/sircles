@@ -23,6 +23,10 @@ const run=s=>w.eval(s);
 (async()=>{
  await sleep(100);
  ok(errs.length===0,'no script errors on load '+errs.join('|'));
+ ok(w.document.title==='Sircles'&&$('#c')&&/favicon\.svg/.test(html),'page title and favicon use Sircles branding');
+ const favicon=fs.readFileSync(path.join(__dirname,'..','favicon.svg'),'utf8');
+ const faviconColors=[...favicon.matchAll(/stroke="(#[0-9a-f]{6})"/g)].map(match=>match[1]);
+ ok(faviconColors.length===5&&faviconColors[0]==='#d7301f'&&faviconColors[4]==='#2f5fd0','favicon has five dotted rings ordered red to blue');
  ok($('#sb').textContent==='Shuffle setup'&&$('#sb').nextElementSibling.id==='fb','Shuffle setup sits next to Fit in the map toolbar');
  ok($('#app').firstElementChild.id==='side','side panel is positioned on the left');
  const resizeHandle=$('#sr');
@@ -156,7 +160,10 @@ const run=s=>w.eval(s);
  $('#exm').click();await sleep(20);
  ok(run('S.people.length')===13&&!w.document.body.classList.contains('onb'),'example data loads from intro');
  ok(run('Object.keys(groups).length')===3,'example has 3 groups: '+run('Object.values(groups).map(s=>[...s].join("+")).join(" | ")'));
- const saved=JSON.parse(w.localStorage.getItem('todo-circles'));ok(saved.v===2&&saved.S.people.length===13,'autosaved');
+ const saved=JSON.parse(w.localStorage.getItem('sircles'));ok(saved.v===2&&saved.S.people.length===13,'autosaved with Sircles key');
+ w.localStorage.setItem('todo-circles',w.localStorage.getItem('sircles'));
+ w.localStorage.removeItem('sircles');
+ ok(run('load()')&&!!w.localStorage.getItem('sircles'),'legacy autosave migrates to the Sircles key');
 
  // ---- new behaviours ----
  run(`lv='${id('Jon')}';tab='People';render()`);
@@ -328,7 +335,7 @@ const run=s=>w.eval(s);
  ok(run('G.appearance.lineWidth')===2.2,'appearance setting changes line thickness');
  appearanceInput=$('#bd [data-act=ringSpacing]');appearanceInput.value='100';appearanceInput.dispatchEvent(new w.Event('change',{bubbles:true}));
  ok(run('G.appearance.ringSpacing')===100&&Math.abs(run('R(3)-R(2)')-100)<1e-6,'ring spacing stays uniform and is adjustable');
- ok(JSON.parse(w.localStorage.getItem('todo-circles')).G.appearance.nameSize===18,'appearance settings autosave');
+ ok(JSON.parse(w.localStorage.getItem('sircles')).G.appearance.nameSize===18,'appearance settings autosave');
  run(`G.tcol.a='#00ff00';G.tcol.o[2]='#123456';render()`);
  $('#bd [data-act=areset]').click();
  ok(run(`JSON.stringify(G.appearance)===JSON.stringify({nameSize:13,lineWidth:1.1,ringSpacing:80,hideTierNumbers:false})&&G.tcol.a===TC0&&G.tcol.b===TC1&&Object.keys(G.tcol.o).length===0`),'reset appearance restores all sizing controls and colors');
@@ -338,7 +345,7 @@ const run=s=>w.eval(s);
  run("tiers[0]='Closest';render()");
  const hideTierNumbers=$('#bd [data-act=hideTierNumbers]');
  hideTierNumbers.checked=true;w.__text.length=0;hideTierNumbers.dispatchEvent(new w.Event('change',{bubbles:true}));
- ok(run('G.appearance.hideTierNumbers')&&JSON.parse(w.localStorage.getItem('todo-circles')).G.appearance.hideTierNumbers&&w.__text.includes('Closest')&&!w.__text.includes('1 · Closest')&&!w.__text.some(text=>/^[1-5]$/.test(text)),'hiding tier numbers persists and preserves custom ring labels');
+ ok(run('G.appearance.hideTierNumbers')&&JSON.parse(w.localStorage.getItem('sircles')).G.appearance.hideTierNumbers&&w.__text.includes('Closest')&&!w.__text.includes('1 · Closest')&&!w.__text.some(text=>/^[1-5]$/.test(text)),'hiding tier numbers persists and preserves custom ring labels');
  // ---- shift selection, pair editing, and group drag ----
  run(`resetAll();S.people=['A','B','C'].map(name=>({id:name,name,tier:null}));S.links=[];commit();sim.stop();T=d3.zoomIdentity`);
  run(`byId.A.x=100;byId.A.y=100;byId.B.x=200;byId.B.y=100;byId.C.x=300;byId.C.y=100;nodes.forEach(n=>n.hw=30)`);

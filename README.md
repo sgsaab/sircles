@@ -33,6 +33,7 @@ The only runtime dependency is [d3](https://d3js.org/), loaded from cdnjs.
 ## Project structure
 
 - `index.html` contains the page structure.
+- `favicon.svg` contains the five-ring red-to-blue app icon.
 - `styles.css` contains the app styles.
 - `app.js` contains map layout, rendering, and pointer interactions.
 - `data.js` contains CSV import/export and example data.
@@ -68,4 +69,4 @@ The included workflow (`.github/workflows/pages.yml`) runs the tests and deploys
 
 ## License
 
-TODO: choose a license.
+No license has been selected for this project.
