@@ -1,20 +1,13 @@
-/* ---------- tier controls: type a number (1–12), or pick ♥ / broken ♥ ---------- */
+/* ---------- relationship controls ---------- */
 function tc(v, o) {
   const shown =
-    v === BRK ? "0" : v === ROM ? "♥" : typeof v === "number" ? v : "";
+    v === BRK ? "💔" : v === ROM ? "♥" : typeof v === "number" ? v : "";
+  const prompt = `Choose a number 1 to ${tiers.length}`;
   return (
     `<span class="tc" data-a="${o.a}" data-b="${o.b}">` +
-    (o.btns
-      ? tiers
-          .map(
-            (n, i) =>
-              `<button data-k="${i + 1}" title="${esc(n)}"${v === i + 1 ? ' class="on"' : ""}>${i + 1}</button>`,
-          )
-          .join("")
-      : "") +
-    `<input class="ti" value="${shown}" placeholder="–" title="Type a positive tier up to ${MAXT}; decimals are allowed, 0 means broken up, h means romantic">` +
-    `<button data-k="h" title="Romantic partner" class="${v === ROM ? "on" : ""}" style="color:var(--hr)">${HEART}</button><button data-k="b" title="Broken up (0)" class="${v === BRK ? "on" : ""}">${BROKEN}</button>` +
-    (v == null ? "" : '<button data-k="del" title="Remove">✕</button>') +
+    `<input class="ti" type="text" inputmode="decimal" value="${shown}" placeholder="1–${tiers.length}" title="${prompt}; decimals are allowed">` +
+    `<button type="button" data-k="h" title="Romantic relationship" aria-label="Romantic relationship">♥</button>` +
+    `<button type="button" data-k="b" title="Heartbreak" aria-label="Heartbreak">💔</button>` +
     "</span>"
   );
 }
@@ -23,8 +16,8 @@ function tcApply(w, raw) {
     b = w.dataset.b;
   let t;
   const r = raw.toLowerCase();
-  if (r === "h" || r === "♥" || r === "♡") t = ROM;
-  else if (r === "b" || r === "0" || r === "💔") t = BRK;
+  if (r === "h" || r === "heart" || r === "♥" || r === "♡") t = ROM;
+  else if (r === "b" || r === "broken" || r === "0" || r === "💔") t = BRK;
   else if (r === "" || r === "del") t = null;
   else {
     t = Number(r);
@@ -85,7 +78,7 @@ function levels() {
     ov = override(L) || "",
     grow = `<div class="row"><span class="n">Group</span><select data-act="pgrp"><option value="">Automatic${gOf[L.id] && !ov ? " (" + esc(G.names[gOf[L.id]]) + ")" : ""}</option><option value="-"${ov === "-" ? " selected" : ""}>No group</option>${gids.map((g) => `<option value="${g}"${ov === g ? " selected" : ""}>${esc(G.names[g] || g)}</option>`).join("")}</select></div>`;
   return (
-    `<div class="row"><button data-act="lvback">← Back</button><b style="flex:1">${esc(L.name)}</b></div><div class="mu" style="padding:8px 0">Closeness between ${esc(L.name)} and everyone else. Type a number, 0 or the broken ♥ for broken up, or h or ♥ for romantic partner.</div><div class="row"><span class="n">You</span>${tc(L.tier, { a: L.id, b: "you" })}</div>` +
+    `<div class="row"><button data-act="lvback">← Back</button><b style="flex:1">${esc(L.name)}</b></div><div class="mu relationship-help">Choose a number 1 to ${tiers.length}. Decimals are allowed; use the buttons for romantic relationships or heartbreak.</div><div class="row"><span class="n">You</span>${tc(L.tier, { a: L.id, b: "you" })}</div>` +
     grow +
     S.people
       .filter((p) => p.id !== L.id)
@@ -99,17 +92,19 @@ function levels() {
 function groupsView() {
   const ids = [...new Set([...Object.keys(groups), ...Object.keys(G.cg)])];
   return (
-    `<p class="mu">Groups are found automatically: clusters where most people know each other (You is excluded; ♥ and broken ♥ links are ignored). Editing a group locks it so it stays as you set it.</p><p><button data-act="gnew">New group</button> <button data-act="gauto">Reset all to automatic</button></p>` +
+    `<p class="group-actions"><button data-act="gnew">+ New group</button><button data-act="gauto">Reset groups</button></p>` +
     (ids
-      .map(
-        (g) =>
-          `<div class="row" style="flex-wrap:wrap"><input type="color" data-act="gcolor" data-g="${g}" value="${gcol(g)}" style="width:34px;padding:1px"><input data-act="gname" data-g="${g}" value="${esc(G.names[g] || "")}" style="flex:1"><button data-act="gdel" data-g="${g}" title="Delete group">✕</button><div style="width:100%">${[...(groups[g] || [])].map((id) => `<span class="chip" data-act="grem" data-g="${g}" data-id="${id}" title="Remove from group">${esc(nm(id))} ✕</span>`).join("")}<select data-act="gadd" data-g="${g}"><option value="">+ add person</option>${S.people
-            .filter((p) => gOf[p.id] !== g)
-            .map((p) => `<option value="${p.id}">${esc(p.name)}</option>`)
-            .join("")}</select></div></div>`,
-      )
-      .join("") ||
-      '<p class="mu">No groups yet — link some people together, or make one with New group.</p>')
+      .map((g) => {
+        const members = groups[g] || new Set();
+        return `<div class="row group-row" style="flex-wrap:wrap"><input type="color" data-act="gcolor" data-g="${esc(g)}" value="${gcol(g)}" style="width:34px;padding:1px"><input data-act="gname" data-g="${esc(g)}" value="${esc(G.names[g] || "")}" style="flex:1"><button data-act="gdel" data-g="${esc(g)}" title="Delete group">✕</button><div style="width:100%">${[...members].map((id) => `<span class="chip" data-act="grem" data-g="${esc(g)}" data-id="${esc(id)}" title="Remove from group">${esc(nm(id))} ✕</span>`).join("")}<select data-act="gadd" data-g="${esc(g)}"><option value="">+ add person</option>${S.people
+          .filter((person) => !members.has(person.id))
+          .map(
+            (person) =>
+              `<option value="${esc(person.id)}">${esc(person.name)}</option>`,
+          )
+          .join("")}</select></div></div>`;
+      })
+      .join("") || '<p class="mu">No groups yet — make one with New group.</p>')
   );
 }
 function appearanceView() {
@@ -119,24 +114,23 @@ function appearanceView() {
   const range = (label, action, value, min, max, step, unit) =>
     `<div class="row"><label class="n" for="${action}">${label}</label><input id="${action}" type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-act="${action}" style="flex:1;min-width:80px"><output>${value}${unit}</output></div>`;
   return (
-    `<p class="mu">Adjust the map's appearance. Fractional tiers sit between rings; each whole-number band uses its lower tier's color.</p>` +
     range("Name size", "nameSize", nameSize, 9, 24, 1, "px") +
     range("Line thickness", "lineWidth", lineWidth, 0.5, 4, 0.1, "px") +
     range("Ring spacing", "ringSpacing", ringSpacing, 40, 180, 5, "px") +
-    `<p class="mu">Tier 1 is closest to the center. For example, 1.5 sits between rings 1 and 2 and uses tier 1's color. Names are optional.</p>` +
+    `<label class="row"><span class="n">Hide tier numbers</span><input type="checkbox" data-act="hideTierNumbers"${G.appearance.hideTierNumbers ? " checked" : ""}></label>` +
+    `<p class="mu">Tier 1 is closest to the center</p>` +
     `<div class="row"><span class="n">Gradient</span>${sw("tca", G.tcol.a)}<span style="flex:1;height:12px;border-radius:6px;background:linear-gradient(90deg,${tiers.map((_, i) => tierColor(i + 1)).join(",")})"></span>${sw("tcb", G.tcol.b)}</div>` +
     tiers
       .map(
         (n, i) =>
-          `<div class="row">${sw("tcol", tierColor(i + 1), `data-t="${i + 1}" title="Line color for tier ${i + 1}"`)}<b style="width:24px">${i + 1}</b><input data-act="tname" data-i="${i}" value="${esc(n)}" placeholder="name (optional)" style="flex:1"></div>`,
+          `<div class="row">${sw("tcol", tierColor(i + 1), `data-t="${i + 1}" title="Line color for tier ${i + 1}"`)}<b style="width:24px">${i + 1}</b><input data-act="tname" data-i="${i}" value="${esc(n)}" placeholder="name" style="flex:1"></div>`,
       )
       .join("") +
-    `<p><button data-act="tadd"${tiers.length >= MAXT ? " disabled" : ""}>Add tier</button> <button data-act="trem"${tiers.length <= 2 ? " disabled" : ""}>Remove last tier</button> <button data-act="treset">Reset to 5</button> <button data-act="tcreset">Reset colors</button> <button data-act="areset">Reset appearance</button></p>`
+    `<div class="appearance-actions"><button data-act="tadd"${tiers.length >= MAXT ? " disabled" : ""}>Add tier</button><button data-act="trem"${tiers.length <= 2 ? " disabled" : ""}>Remove last tier</button><button data-act="treset">Reset to 5</button><button data-act="tcreset">Reset colors</button><button data-act="areset">Reset appearance</button></div>`
   );
 }
 function dataView() {
-  return `<p><button class="p" data-act="exp">Export CSV${dirty ? " (unexported changes)" : ""}</button> <button data-act="imp">Import CSV…</button></p><p><button data-act="ex">Load example data</button> <button data-act="relaxall">Relax everyone</button> <button data-act="clr">Clear everything</button></p>
- <p class="mu">Everything stays in your browser. Autosaved locally; export CSV for a real backup.<br>Columns: kind (tier | person | link), id, name, tier, a, b, x, y. Tier rows: id = number, name = label, color = optional line color. Gradient rows: id a or b, color = gradient endpoint. Person rows: tier = tier to You (a positive number, including decimals, heart or broken; blank if none); x/y = fixed position (optional). Link rows: a, b = person ids or names; tier = a positive number, including decimals, heart, or broken (0).</p>`;
+  return `<div class="data-actions"><button class="p" data-act="exp">Export${dirty ? " (unexported changes)" : ""}</button><button data-act="imp">Import</button><button data-act="ex">Load example data</button><button data-act="relaxall">Relax everyone</button><button data-act="clr">Clear all data</button></div>`;
 }
 function usedTier(t) {
   return (
@@ -165,7 +159,10 @@ async function resetGroupsToAutomatic() {
     )) !== 1
   )
     return;
-  S.people.forEach((person) => delete person.g);
+  S.people.forEach((person) => {
+    delete person.g;
+    delete person.gs;
+  });
   G.cg = {};
   G.colors = {};
   commit();
@@ -292,8 +289,10 @@ $("#side").addEventListener("click", async (e) => {
     G.names[id] = "Group " + n;
     commit();
   } else if (d.act === "grem") {
-    lockGroup(d.g);
-    S.people.find((p) => p.id === d.id).g = "-";
+    const person = S.people.find((p) => p.id === d.id);
+    const groupId = lockGroup(d.g);
+    if (person.g === groupId) person.g = "-";
+    person.gs = (person.gs || []).filter((id) => id !== groupId);
     commit();
   } else if (d.act === "gdel") {
     if (
@@ -302,10 +301,18 @@ $("#side").addEventListener("click", async (e) => {
         "Delete",
       ])) === 1
     ) {
-      [...(groups[d.g] || [])].forEach((id) => {
-        S.people.find((p) => p.id === id).g = "-";
+      const members = groups[d.g] || new Set();
+      const manualGroup = !!G.cg[d.g];
+      S.people.forEach((person) => {
+        person.gs = (person.gs || []).filter((id) => id !== d.g);
+        if (person.g === d.g || (!manualGroup && members.has(person.id)))
+          person.g = "-";
       });
       delete G.cg[d.g];
+      if (manualGroup) {
+        delete G.names[d.g];
+        delete G.colors[d.g];
+      }
       commit();
     }
   } else if (d.act === "gauto") {
@@ -368,8 +375,10 @@ $("#side").addEventListener("change", (e) => {
     draw();
   } else if (d.act === "gadd") {
     if (t.value) {
-      const c = lockGroup(d.g);
-      S.people.find((p) => p.id === t.value).g = c;
+      const groupId = lockGroup(d.g);
+      const person = S.people.find((p) => p.id === t.value);
+      if (person.g === "-" || !gOf[person.id]) person.g = groupId;
+      else person.gs = [...new Set([...(person.gs || []), groupId])];
       commit();
     }
   } else if (d.act === "pgrp") {
@@ -392,6 +401,11 @@ $("#side").addEventListener("change", (e) => {
     draw();
   } else if (d.act === "tname") {
     tiers[+d.i] = t.value;
+    save();
+    dirty = true;
+    draw();
+  } else if (d.act === "hideTierNumbers") {
+    G.appearance.hideTierNumbers = t.checked;
     save();
     dirty = true;
     draw();
@@ -429,7 +443,7 @@ const PR = [
   ["Who else is in your closest ~5?", "About 3–4 more people."],
   ["Who else makes up your closest ~15?", "About 10 more people."],
 ];
-const INTRO = `<div><h1>How your social life is structured</h1><p>Research on human social networks finds that our relationships fall into circles that grow by roughly a factor of three: about <b>1–2</b> people in the innermost circle, around <b>5</b> close ones, about <b>15</b> in the next layer, then roughly 50 and 150. Closer circles get more of our time and emotional investment.</p><div class="cite">Based on Dunbar’s work, e.g. MacCarron, Kaski &amp; Dunbar (2016), “Calling Dunbar’s Numbers,” <i>Social Networks</i>; Zhou et al. (2005). These are averages, so use them as prompts, not rules. Everything stays in your browser.</div><button class="p" id="go">Start</button> <button id="exm">Try example data</button></div>`;
+const INTRO = `<div><h1>How your social life is structured</h1><p>Research on human social networks finds that our relationships fall into circles that grow by roughly a factor of three: about <b>1–2</b> people in the innermost circle, around <b>5</b> close ones, about <b>15</b> in the next layer, then roughly 50 and 150. Closer circles get more of our time and emotional investment.</p><div class="cite">Based on Dunbar’s work, e.g. MacCarron, Kaski &amp; Dunbar (2016), “Calling Dunbar’s Numbers,” <i>Social Networks</i>; Zhou et al. (2005). These are averages, so use them as prompts, not rules. Everything stays in your browser.</div><button class="p" id="go">Start</button> <button id="exm">Try example data</button> <button id="skipIntro">Skip onboarding</button></div>`;
 function startOnboarding() {
   document.body.classList.add("onb");
   cv.classList.add("h");
@@ -440,6 +454,8 @@ function startOnboarding() {
   $("#pk").style.display = "none";
   $("#cm").style.display = "none";
   step = 0;
+  revealedOnboardingTiers = 0;
+  onboardingRingFade = null;
   buf = [[], [], []];
   busy = false;
   obRender();
@@ -450,6 +466,9 @@ function endOnboarding() {
   $("#ob").className = "";
   busy = false;
   setTimeout(() => view(W / 2, H / 2, 1, 600), 60);
+}
+function skipOnboarding() {
+  endOnboarding();
 }
 function fitOnboarding() {
   const c = document.querySelector("#ob>div");
@@ -481,11 +500,12 @@ function obRender() {
       obRender();
     };
     $("#exm").onclick = () => example();
+    $("#skipIntro").onclick = skipOnboarding;
     return;
   }
   const i = step - 1;
   o.className = "top";
-  o.innerHTML = `<div><h1>${PR[i][0]}</h1><p class="mu">${PR[i][1]} You can edit this later.</p><input id="oi" placeholder="Name, then Enter" style="width:100%;box-sizing:border-box"><div id="ch" style="margin:10px 0;min-height:36px"></div><button class="p" id="nx">${step < 3 ? "Next" : "Show my map"}</button></div>`;
+  o.innerHTML = `<div class="onb-step"><h1>${PR[i][0]}</h1><p class="mu">${PR[i][1]} You can edit this later.</p><div class="onb-entry"><input id="oi" placeholder="Name, then Enter"><button class="p" id="nx" title="${step < 3 ? "Next" : "Show my map"}" aria-label="${step < 3 ? "Next" : "Show my map"}">→</button></div><div id="ch" style="margin:10px 0;min-height:36px"></div></div>`;
   const chips = () => {
       $("#ch").innerHTML = buf[i]
         .map((n, j) => `<span class="chip" data-j="${j}">${esc(n)} ✕</span>`)
@@ -522,8 +542,16 @@ function obRender() {
     busy = true;
     $("#oi").disabled = true;
     $("#nx").disabled = true;
+    fadeInOnboardingRing(i + 1);
     applyTier(i);
     cv.classList.remove("h");
+    setTimeout(
+      () => {
+        const panel = $("#ob>div");
+        if (panel) panel.classList.add("leaving");
+      },
+      Math.max(0, DELAY - 260),
+    );
     setTimeout(() => {
       busy = false;
       if (step < 3) {

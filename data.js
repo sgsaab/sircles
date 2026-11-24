@@ -5,9 +5,23 @@ const quoteCsvField = (value) => {
 };
 const serializeTier = (tier) =>
   tier === ROM ? "heart" : tier === BRK ? "broken" : (tier ?? "");
+const serializeAdditionalGroups = (person) =>
+  [...new Set(person.gs || [])].join("|");
 function csvText() {
   const rows = [
-    ["kind", "id", "name", "tier", "a", "b", "x", "y", "group", "color"],
+    [
+      "kind",
+      "id",
+      "name",
+      "tier",
+      "a",
+      "b",
+      "x",
+      "y",
+      "group",
+      "color",
+      "groups",
+    ],
   ];
   tiers.forEach((name, index) =>
     rows.push([
@@ -52,6 +66,8 @@ function csvText() {
       person.px ?? "",
       person.py ?? "",
       person.g ?? "",
+      "",
+      serializeAdditionalGroups(person),
       "",
     ]),
   );
@@ -200,6 +216,13 @@ async function importCSV(text) {
     const x = getCell(row, "x");
     const y = getCell(row, "y");
     const groupId = getCell(row, "group");
+    const additionalGroups = [
+      ...new Set(
+        getCell(row, "groups")
+          .split("|")
+          .filter((additionalGroupId) => manualGroups[additionalGroupId]),
+      ),
+    ];
     if (!name) {
       errors.push("Row " + lineNumber + ": person needs a name");
       return;
@@ -222,6 +245,7 @@ async function importCSV(text) {
       tier,
       ...(x !== "" && y !== "" ? { px: +x, py: +y } : {}),
       ...(groupId === "-" || manualGroups[groupId] ? { g: groupId } : {}),
+      ...(additionalGroups.length ? { gs: additionalGroups } : {}),
     });
   });
   const findPersonId = (value) =>

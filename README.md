@@ -4,15 +4,17 @@ Map out your social life!
 
 This project handles the following:
 
-- Onboarding flow based on Dunbar's layers
+- Skippable onboarding based on Dunbar's layers, revealing the map one ring at a time
 - A 2D map with you at the center, where closer people sit closer together
 - Romantic relationships, current and ended
 - Automatic friend group clustering, editable as well
+- People can belong to more than one group; groups can be created and edited
 - Center on anyone to see the map from their point of view
 - Shift-click to define a relationship or select and drag a group together
 - Move, drag, and relax to place or release people
-- Fractional relationship tiers, with colors assigned by whole-number band
-- Appearance controls for tier colors, name size, line thickness, and ring spacing
+- Text-entry relationship tiers (including decimals, with colors assigned by whole-number band), plus romantic and ended relationship buttons
+- Guided setup reveals the social map one ring at a time
+- Appearance controls for tier colors, ring-number visibility, name size, line thickness, and ring spacing
 - Right-click the map for quick actions such as fit, relax, and reset groups
 - Resizable side panel (expandable to full screen): People, Groups, Appearance, Data
 - CSV import/export (single file), plus autosave to `localStorage`.
@@ -47,14 +49,14 @@ npm test
 
 ## CSV format
 
-One file, header `kind,id,name,tier,a,b,x,y,group,color`. Row kinds:
+One file, header `kind,id,name,tier,a,b,x,y,group,color,groups`. Row kinds:
 
 | kind       | fields used                                                                                                                                             |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `tier`     | `id` = tier number, `name` = label, `color` = optional line color                                                                                       |
 | `gradient` | `id` = `a` (closest) or `b` (furthest), `color` = gradient endpoint                                                                                     |
 | `group`    | `id`, `name`, `color` (manual groups)                                                                                                                   |
-| `person`   | `id`, `name`, `tier` = tier to You (positive number, including decimals, `heart`, `broken` or blank), `x`/`y` = fixed position (optional), `group` = manual group id or `-` for none |
+| `person`   | `id`, `name`, `tier` = tier to You (positive number, including decimals, `heart`, `broken` or blank), `x`/`y` = fixed position (optional), `group` = primary manual group id or `-` for none, `groups` = `|`-separated additional group ids |
 | `link`     | `a`, `b` = person ids (or names), `tier` = positive number (including decimals), `heart` or `broken` (`0`)                                                                            |
 
 Older exports (without `tier` rows) still import: `0` is read as a romantic partner and `6` as broken up.

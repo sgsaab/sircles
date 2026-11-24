@@ -12,7 +12,12 @@ const TC0 = "#d7301f",
     colors: {},
     cg: {},
     tcol: { a: TC0, b: TC1, o: {} },
-    appearance: { nameSize: 13, lineWidth: 1.1, ringSpacing: 80 },
+    appearance: {
+      nameSize: 13,
+      lineWidth: 1.1,
+      ringSpacing: 80,
+      hideTierNumbers: false,
+    },
   }),
   RES = 1,
   DELAY = 1800,
@@ -76,8 +81,10 @@ let ctr = "you",
   dg = null,
   skipClick = false,
   step = 0,
+  revealedOnboardingTiers = 0,
   buf = [[], [], []],
-  busy = false;
+  busy = false,
+  onboardingRingFade = null;
 const uid = () => "p" + Math.random().toString(36).slice(2, 8),
   nm = (id) =>
     id === "you"
@@ -127,6 +134,7 @@ function load() {
     if (!d || !d.S || !d.S.people.length) return false;
     S = d.S;
     G = Object.assign(newG(), d.G);
+    delete G.groupOrder;
     tiers = d.tiers || DEF.slice();
     if (!d.v)
       S.links.forEach((l) => {
@@ -298,7 +306,7 @@ function refine(clusters, neighbors) {
     return members;
   });
 }
-// manual overrides live on each person: p.g = custom group id, or '-' for "no group"; unset = automatic
+// p.g is the primary group override; p.gs stores additional manual group memberships.
 const override = (p) => (p.g && (p.g === "-" || G.cg[p.g]) ? p.g : null);
 function detect() {
   const personIds = S.people.map((person) => person.id);
@@ -379,9 +387,9 @@ function detect() {
   prev = automaticGroups;
   groups = {};
   gOf = {};
-  const addPersonToGroup = (personId, groupId) => {
+  const addPersonToGroup = (personId, groupId, primary = true) => {
     (groups[groupId] = groups[groupId] || new Set()).add(personId);
-    gOf[personId] = groupId;
+    if (primary) gOf[personId] = groupId;
   };
   S.people.forEach((person) => {
     const groupOverride = override(person);
@@ -396,6 +404,12 @@ function detect() {
       members.forEach((personId) => addPersonToGroup(personId, groupId));
     }
   }
+  S.people.forEach((person) => {
+    (person.gs || []).forEach((groupId) => {
+      if (G.cg[groupId] && groupId !== gOf[person.id])
+        addPersonToGroup(person.id, groupId, false);
+    });
+  });
 }
 // editing an automatic group turns it into a manual (locked) one so it stays as you set it
 function lockGroup(g) {
@@ -411,7 +425,6 @@ function lockGroup(g) {
   return c;
 }
 const gcol = (g) => G.colors[g] || PAL[(+g.slice(1) - 1) % PAL.length];
-
 /* ---------- layout ---------- */
 const sim = d3
   .forceSimulation()
@@ -717,6 +730,16 @@ const tierColor = (t) => {
     );
   return (c || d3.color(TC0)).formatHex();
 };
+function fadeInOnboardingRing(tier) {
+  if (!document.body.classList.contains("onb")) return;
+  revealedOnboardingTiers = tier;
+  onboardingRingFade = {
+    tier,
+    startedAt: performance.now(),
+    framePending: false,
+  };
+  draw();
+}
 function edge(a, b, t, tx, mu, hr, bg) {
   const dx = b.x - a.x,
     dy = b.y - a.y,
@@ -757,29 +780,36 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.setTransform(d * T.k, 0, 0, d * T.k, d * T.x, d * T.y);
-  const used = new Set(
-    S.people
-      .filter((person) => typeof person.tier === "number")
-      .map((person) => Math.max(1, Math.floor(person.tier))),
-  );
+  const onboarding = document.body.classList.contains("onb");
   tiers.forEach((name, i) => {
     const t = i + 1;
-    if (t > 3 && !used.has(t)) return;
+    if (onboarding && t > revealedOnboardingTiers) return;
+    const fadeProgress =
+      onboardingRingFade && onboardingRingFade.tier === t
+        ? Math.min(1, (performance.now() - onboardingRingFade.startedAt) / 900)
+        : 1;
     ctx.beginPath();
     ctx.arc(0, 0, R(t), 0, 6.29);
     ctx.setLineDash([4, 6]);
     ctx.strokeStyle = tierColor(t);
-    ctx.globalAlpha = 0.6;
+    ctx.globalAlpha = 0.6 * fadeProgress;
     ctx.lineWidth = G.appearance.lineWidth;
     ctx.stroke();
-    ctx.globalAlpha = 1;
     ctx.setLineDash([]);
-    ctx.fillStyle = mu;
-    ctx.font = "11px system-ui";
-    ctx.textAlign = "center";
-    ctx.fillText(t + (name ? " · " + name : ""), 0, -R(t) - 4);
+    if (!G.appearance.hideTierNumbers || name) {
+      ctx.fillStyle = mu;
+      ctx.font = "11px system-ui";
+      ctx.textAlign = "center";
+      ctx.globalAlpha = fadeProgress;
+      ctx.fillText(
+        G.appearance.hideTierNumbers ? name : t + (name ? " · " + name : ""),
+        0,
+        -R(t) - 4,
+      );
+    }
+    ctx.globalAlpha = 1;
   });
-  for (const g in groups) {
+  Object.keys(groups).forEach((g) => {
     const pts = [];
     let my = 1e9,
       sx = 0,
@@ -795,10 +825,10 @@ function draw() {
       sx += n.x;
       c++;
     });
-    if (pts.length < 3) continue;
+    if (pts.length < 3) return;
     const h = d3.polygonHull(pts),
       col = gcol(g);
-    if (!h) continue;
+    if (!h) return;
     const midpoints = h.map((point, index) => {
       const next = h[(index + 1) % h.length];
       return [(point[0] + next[0]) / 2, (point[1] + next[1]) / 2];
@@ -824,7 +854,7 @@ function draw() {
     ctx.font = "600 12px system-ui";
     ctx.textAlign = "center";
     ctx.fillText(G.names[g], sx / c, my - 46);
-  }
+  });
   nodes.forEach((n) => {
     if (n.rel != null && n.id !== ctr)
       edge(byId[ctr], n, n.rel, tx, mu, hr, bg);
@@ -871,6 +901,18 @@ function draw() {
     }
     ctx.textBaseline = "alphabetic";
   });
+  if (onboardingRingFade) {
+    if (performance.now() - onboardingRingFade.startedAt >= 900) {
+      onboardingRingFade = null;
+    } else if (!onboardingRingFade.framePending) {
+      onboardingRingFade.framePending = true;
+      requestAnimationFrame(() => {
+        if (!onboardingRingFade) return;
+        onboardingRingFade.framePending = false;
+        draw();
+      });
+    }
+  }
 }
 function size() {
   W = cv.parentNode.clientWidth;
@@ -1098,8 +1140,9 @@ function pick(a, b, e) {
     k = $("#pk");
   k.dataset.kind = "relationship";
   k.innerHTML =
+    `<div class="mu relationship-help">Choose a number 1 to ${tiers.length}</div>` +
     `<div class="mu">${esc(nm(a))} – ${esc(nm(b))}</div>` +
-    tc(cur, { a, b, btns: true });
+    tc(cur, { a, b });
   place(k, e, 260, 130);
 }
 function showPanel() {
@@ -1127,7 +1170,7 @@ function banner() {
       (intro
         ? "Here’s your map… but it revolves around <b>you</b> — not that that’s a bad thing! "
         : "") +
-      `Tap two people to link them (the underlined name is the center of the map). <span class="mu">${n} friend-to-friend link${n === 1 ? "" : "s"}</span> <button class="p" id="dn">Done</button>`;
+      `Tap two people to link them <button class="p" id="dn">Done</button>`;
   b.style.display = h ? "block" : "none";
   b.innerHTML = h;
   if (moving)
