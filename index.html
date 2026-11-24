@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>TODO</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div id="app">
+      <div id="side">
+        <div id="hd">
+          <div class="t" id="tabs"></div>
+          <button data-act="full" title="Expand">⤢</button>
+          <button data-act="hide" title="Close">✕</button>
+        </div>
+        <div id="bd"></div>
+      </div>
+      <div id="sr" role="separator" aria-orientation="vertical" aria-label="Resize sidebar" aria-valuenow="340" tabindex="0"></div>
+      <div id="cv">
+        <canvas id="c"></canvas>
+        <div id="tb">
+          <button id="lm">Link people</button>
+          <button id="pb" style="display:none">Panel</button>
+          <button id="rb">Guided setup</button>
+          <button id="fb">Fit</button>
+          <button id="vb" style="display:none"></button>
+        </div>
+        <div id="bn"></div>
+        <div id="pk"></div>
+        <div id="cm"></div>
+      </div>
+    </div>
+    <div id="ob"></div>
+    <div id="dl"></div>
+    <input type="file" id="fi" accept=".csv" hidden>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="app.js"></script>
+    <script src="data.js"></script>
+    <script src="ui.js"></script>
+  </body>
+</html>

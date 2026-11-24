@@ -1,0 +1,16 @@
+{
+  "name": "social-map",
+  "version": "1.0.0",
+  "description": "A no-backend web app that maps out your social life: closeness tiers, auto-detected friend groups, CSV import/export.",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write app.js data.js ui.js",
+    "test": "node test/test.js",
+    "start": "npx --yes serve ."
+  },
+  "devDependencies": {
+    "d3": "7.8.5",
+    "jsdom": "^24.0.0",
+    "prettier": "^3.10.1"
+  }
+}
