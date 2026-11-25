@@ -28,6 +28,10 @@ button{cursor:pointer}button.p{background:var(--ac);color:#fff;border-color:var(
 #pk>button,#cm>button{text-align:left}
 #cm{z-index:10;min-width:180px}
 #ob{position:fixed;display:none;z-index:30}#ob.full{inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center}
+#ob.splash{inset:0;display:block;background:transparent;pointer-events:none}
+#ob.splash .splash-title{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;white-space:nowrap;font:400 clamp(48px,7vw,72px)/1 system-ui,-apple-system,Segoe UI,sans-serif;background:linear-gradient(110deg,#d7301f 15%,#a44e78 55%,#2f5fd0 90%);background-clip:text;-webkit-background-clip:text;color:transparent}
+#ob.splash .splash-node{position:absolute;z-index:1;transform:translate(-50%,-50%);pointer-events:auto;touch-action:none;cursor:grab;white-space:nowrap;border-radius:999px;padding:7px 10px;font-size:12px;background:color-mix(in srgb,var(--pn) 86%,transparent);box-shadow:0 4px 18px #0002;backdrop-filter:blur(8px)}
+#ob.splash .splash-node:active{cursor:grabbing}
 #ob.top{inset:0 0 auto 0;display:block;pointer-events:none}#ob>div{max-width:520px;padding:24px}
 #ob.top>div{pointer-events:auto;margin:16px auto 0;background:transparent;border:0;border-radius:0;padding:32px 20px 20px;box-shadow:none}
 .onb-entry{display:flex;gap:8px;align-items:stretch}
@@ -38,7 +42,7 @@ button{cursor:pointer}button.p{background:var(--ac);color:#fff;border-color:var(
 @keyframes onboardingQuestionIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes onboardingQuestionOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-8px)}}
 @media(prefers-reduced-motion:reduce){.onb-step,.onb-step.leaving{animation-duration:.01ms}}
-body.onb #tb,body.onb #side,body.onb #bn,body.onb #pk,body.onb #cm{display:none!important}body.onb canvas{pointer-events:none}
+body.onb #tb,body.onb #side,body.onb #sr,body.onb #bn,body.onb #pk,body.onb #cm{display:none!important}body.onb canvas{pointer-events:none}
 h1{font-size:24px;margin:0 0 12px}.chip{display:inline-block;background:var(--bg);border:1px solid var(--ln);border-radius:99px;padding:3px 10px;margin:3px 4px 3px 0;cursor:pointer}
 .cite{font-size:12px;color:var(--mu);border-left:3px solid var(--ln);padding-left:10px;margin:12px 0}
 #dl{position:fixed;inset:0;background:#0006;z-index:50;display:none;align-items:center;justify-content:center}

@@ -810,7 +810,7 @@ function draw() {
   const onboarding = document.body.classList.contains("onb");
   tiers.forEach((name, i) => {
     const t = i + 1;
-    if (onboarding && t > revealedOnboardingTiers) return;
+    if (onboarding && step > 0 && t > revealedOnboardingTiers) return;
     const fadeProgress =
       onboardingRingFade && onboardingRingFade.tier === t
         ? Math.min(1, (performance.now() - onboardingRingFade.startedAt) / 900)
@@ -888,20 +888,22 @@ function draw() {
   });
   links.forEach((l) => edge(l.source, l.target, l.t, tx, mu, hr, bg));
   nodes.forEach((n) => {
+    if (onboarding && step === 0 && n.id === ctr) return;
     const you = n.id === ctr,
       p = S.people.find((p) => p.id === n.id),
       fixed = p && getPos(p),
-      col = gOf[n.id] ? gcol(gOf[n.id]) : tx;
+      col = gOf[n.id] ? gcol(gOf[n.id]) : tx,
+      displayName = onboarding && step === 0 && you ? "Sircles" : n.name;
     const nameSize = G.appearance.nameSize + (you ? 2 : 0);
     ctx.font = (fixed ? "700 " : "") + nameSize + "px system-ui";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const w = ctx.measureText(n.name).width / 2 + 8;
+    const w = ctx.measureText(displayName).width / 2 + 8;
     n.hw = w;
     ctx.lineWidth = Math.max(6, nameSize * 0.75);
     ctx.lineJoin = "round";
     ctx.strokeStyle = bg;
-    ctx.strokeText(n.name, n.x, n.y);
+    ctx.strokeText(displayName, n.x, n.y);
     if (
       selectedPeople.has(n.id) ||
       n.id === sel ||
@@ -917,7 +919,7 @@ function draw() {
       ctx.stroke();
     }
     ctx.fillStyle = col;
-    ctx.fillText(n.name, n.x, n.y);
+    ctx.fillText(displayName, n.x, n.y);
     if (you) {
       ctx.strokeStyle = col;
       ctx.lineWidth = G.appearance.lineWidth;

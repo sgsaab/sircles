@@ -437,13 +437,92 @@ function resetAll() {
 /* ---------- onboarding ---------- */
 const PR = [
   [
-    "Who are your 1–2 closest friends?",
-    "Your innermost circle. Add a name and press Enter.",
+    "Who are you calling in a crisis?",
+    "Your closest friend(s). Add a name or two and press Enter.",
   ],
-  ["Who else is in your closest ~5?", "About 3–4 more people."],
-  ["Who else makes up your closest ~15?", "About 10 more people."],
+  [
+    "Who else is in your closest ~5?",
+    "Who do you see every day, or multiple times a week? P.S. The numbers are estimates, everyone's life is different.",
+  ],
+  ["Who else makes up your closest ~15?", "The people you see weekly."],
 ];
-const INTRO = `<div><h1>How your social life is structured</h1><p>Research on human social networks finds that our relationships fall into circles that grow by roughly a factor of three: about <b>1–2</b> people in the innermost circle, around <b>5</b> close ones, about <b>15</b> in the next layer, then roughly 50 and 150. Closer circles get more of our time and emotional investment.</p><div class="cite">Based on Dunbar’s work, e.g. MacCarron, Kaski &amp; Dunbar (2016), “Calling Dunbar’s Numbers,” <i>Social Networks</i>; Zhou et al. (2005). These are averages, so use them as prompts, not rules. Everything stays in your browser.</div><button class="p" id="go">Start</button> <button id="exm">Try example data</button> <button id="skipIntro">Skip onboarding</button></div>`;
+const INTRO = `<h1 class="splash-title">Sircles</h1><button class="splash-node" id="go" data-splash-index="0">Start</button><button class="splash-node" id="exm" data-splash-index="1">Try example data</button><button class="splash-node" id="skipIntro" data-splash-index="2">Skip onboarding</button>`;
+let splashPositions = null,
+  splashDrag = null,
+  suppressSplashClick = false;
+function positionSplashNodes() {
+  if (step !== 0 || !document.body.classList.contains("onb")) return;
+  const rect = cv.getBoundingClientRect(),
+    centerX = rect.left + T.x,
+    centerY = rect.top + T.y,
+    radius = R(2) * T.k;
+  if (!splashPositions) {
+    const sideOffset = (Math.sqrt(3) * radius) / 2;
+    splashPositions = [
+      { x: -sideOffset / T.k, y: radius / 2 / T.k },
+      { x: 0, y: radius / T.k },
+      { x: sideOffset / T.k, y: radius / 2 / T.k },
+    ];
+  }
+  const title = $("#ob .splash-title");
+  title.style.left = centerX + "px";
+  title.style.top = centerY + "px";
+  document.querySelectorAll(".splash-node").forEach((node) => {
+    const position = splashPositions[+node.dataset.splashIndex];
+    node.style.left = centerX + position.x * T.k + "px";
+    node.style.top = centerY + position.y * T.k + "px";
+  });
+}
+function configureSplashNode(node) {
+  const index = +node.dataset.splashIndex;
+  node.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    splashDrag = {
+      index,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+    };
+    if (node.setPointerCapture) node.setPointerCapture(event.pointerId);
+  });
+  node.addEventListener("pointermove", (event) => {
+    if (!splashDrag || splashDrag.pointerId !== event.pointerId) return;
+    if (
+      Math.hypot(
+        event.clientX - splashDrag.startX,
+        event.clientY - splashDrag.startY,
+      ) > 3
+    )
+      splashDrag.moved = true;
+    if (!splashDrag.moved) return;
+    const rect = cv.getBoundingClientRect(),
+      centerX = rect.left + T.x,
+      centerY = rect.top + T.y;
+    splashPositions[index] = {
+      x: (event.clientX - centerX) / T.k,
+      y: (event.clientY - centerY) / T.k,
+    };
+    positionSplashNodes();
+  });
+  const finishDrag = (event) => {
+    if (!splashDrag || splashDrag.pointerId !== event.pointerId) return;
+    if (
+      node.releasePointerCapture &&
+      node.hasPointerCapture &&
+      node.hasPointerCapture(event.pointerId)
+    )
+      node.releasePointerCapture(event.pointerId);
+    if (splashDrag.moved) {
+      suppressSplashClick = true;
+      setTimeout(() => (suppressSplashClick = false), 100);
+    }
+    splashDrag = null;
+  };
+  node.addEventListener("pointerup", finishDrag);
+  node.addEventListener("pointercancel", finishDrag);
+}
 function startOnboarding() {
   document.body.classList.add("onb");
   cv.classList.add("h");
@@ -454,6 +533,7 @@ function startOnboarding() {
   $("#pk").style.display = "none";
   $("#cm").style.display = "none";
   step = 0;
+  splashPositions = null;
   revealedOnboardingTiers = 0;
   onboardingRingFade = null;
   buf = [[], [], []];
@@ -493,14 +573,25 @@ function applyTier(i) {
 function obRender() {
   const o = $("#ob");
   if (step === 0) {
-    o.className = "full";
+    o.className = "splash";
+    size();
+    cv.classList.remove("h");
     o.innerHTML = INTRO;
+    view(W / 2, H / 2, 1);
+    document.querySelectorAll(".splash-node").forEach(configureSplashNode);
+    positionSplashNodes();
     $("#go").onclick = () => {
+      if (suppressSplashClick) return;
+      cv.classList.add("h");
       step = 1;
       obRender();
     };
-    $("#exm").onclick = () => example();
-    $("#skipIntro").onclick = skipOnboarding;
+    $("#exm").onclick = () => {
+      if (!suppressSplashClick) example();
+    };
+    $("#skipIntro").onclick = () => {
+      if (!suppressSplashClick) skipOnboarding();
+    };
     return;
   }
   const i = step - 1;
@@ -565,6 +656,7 @@ function obRender() {
     }, DELAY);
   };
 }
+window.addEventListener("resize", positionSplashNodes);
 $("#rb").onclick = async () => {
   if (
     S.people.length &&

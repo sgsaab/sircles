@@ -27,7 +27,7 @@ const run=s=>w.eval(s);
  const favicon=fs.readFileSync(path.join(__dirname,'..','favicon.svg'),'utf8');
  const faviconColors=[...favicon.matchAll(/stroke="(#[0-9a-f]{6})"/g)].map(match=>match[1]);
  ok(faviconColors.length===5&&faviconColors[0]==='#d7301f'&&faviconColors[4]==='#2f5fd0','favicon has five dotted rings ordered red to blue');
- ok($('#sb').textContent==='Shuffle setup'&&$('#sb').nextElementSibling.id==='fb','Shuffle setup sits next to Fit in the map toolbar');
+ ok($('#sb').textContent.trim()==='Shuffle'&&$('#sb').nextElementSibling.id==='fb','Shuffle sits next to Fit in the map toolbar');
  ok($('#app').firstElementChild.id==='side','side panel is positioned on the left');
  const resizeHandle=$('#sr');
  ev(resizeHandle,'pointerdown',{clientX:340});ev(resizeHandle,'pointermove',{clientX:440});ev(resizeHandle,'pointerup',{clientX:440});
@@ -37,11 +37,28 @@ const run=s=>w.eval(s);
  $('#side [data-act=full]').click();ok($('#side').classList.contains('full'),'sidebar can expand to full screen');
  $('#side [data-act=full]').click();ok(!$('#side').classList.contains('full'),'expanded sidebar can shrink back to its prior width');
  ok(w.document.body.classList.contains('onb'),'onboarding active on first run');
- ok($('#ob').className==='full'&&/Dunbar/.test($('#ob').innerHTML),'intro with citation');
+ ok($('#ob').className==='splash','intro is a splash screen');
  ok(!!$('#skipIntro'),'onboarding can be skipped from the intro');
- ok($('#c').classList.contains('h'),'map hidden at start');
+ ok(!$('#c').classList.contains('h'),'map is visible behind the intro splash');
+ ok($('#ob .splash-title').textContent==='Sircles'&&w.document.querySelectorAll('#ob .splash-node').length===3&&!$('#ob .splash-copy'),'intro has a Sircles title, three map-node actions, and no extra copy');
+ w.__rings.length=0;w.__text.length=0;run('draw()');
+ ok(w.__rings.length===5&&$('#ob .splash-title').textContent==='Sircles','intro map shows all five rings around Sircles');
+ ok(Math.abs(parseFloat($('#ob .splash-title').style.left)-run('T.x'))<1e-6&&Math.abs(parseFloat($('#ob .splash-title').style.top)-run('T.y'))<1e-6,'intro title aligns with the map center');
+ ok([...w.document.querySelectorAll('.splash-node')].every(node=>parseFloat(node.style.top)>run('T.y')),'intro action nodes start below the centered title');
+ ok([...w.document.querySelectorAll('.splash-node')].every(node=>Math.abs(Math.hypot(parseFloat(node.style.left)-run('T.x'),parseFloat(node.style.top)-run('T.y'))-run('R(2)'))<1e-6),'intro action nodes start on the second tier');
+ const introNode=$('#go'),
+   introCenterX=run('T.x'),
+   introCenterY=run('T.y'),
+   introRadius=run('R(2)'),
+   introLeft=introNode.style.left;
+ ev(introNode,'pointerdown',{clientX:introCenterX,clientY:introCenterY-introRadius});
+ ev(introNode,'pointermove',{clientX:introCenterX+introRadius,clientY:introCenterY});
+ ev(introNode,'pointerup',{clientX:introCenterX+introRadius,clientY:introCenterY});
+ ok(introNode.style.left!==introLeft,'intro actions can be dragged freely from the second-tier ring');
+ await sleep(120);
  $('#go').click();
- ok($('#ob').className==='top'&&/closest friends/.test($('#ob').textContent),'step 1 prompt shown on top');
+ ok($('#c').classList.contains('h'),'map hides when onboarding setup begins');
+ ok($('#ob').className==='top'&&/calling in a crisis/.test($('#ob').textContent),'step 1 prompt shown on top');
  ok($('#oi').parentElement.classList.contains('onb-entry')&&$('#oi').nextElementSibling.id==='nx'&&$('#nx').textContent==='→'&&!$('#skip'),'guided steps have an inline Next arrow and no skip button');
  ok($('#ob>div').classList.contains('onb-step'),'guided question uses the transition wrapper');
  const q1=$('#ob h1').textContent,rect=$('#ob>div');
@@ -155,7 +172,7 @@ const run=s=>w.eval(s);
  $('#dl [data-i="0"]').click();await sleep(20);
  ok(run('S.people.length')===4&&!w.document.body.classList.contains('onb'),'cancel keeps data');
  $('#rb').click();await sleep(20);$('#dl [data-i="1"]').click();await sleep(20);
- ok(run('S.people.length')===0&&w.document.body.classList.contains('onb')&&$('#ob').className==='full','confirm clears data and restarts onboarding');
+ ok(run('S.people.length')===0&&w.document.body.classList.contains('onb')&&$('#ob').className==='splash','confirm clears data and restarts onboarding');
  // example from intro, persistence
  $('#exm').click();await sleep(20);
  ok(run('S.people.length')===13&&!w.document.body.classList.contains('onb'),'example data loads from intro');
