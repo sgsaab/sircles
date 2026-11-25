@@ -19,6 +19,8 @@ const TC0 = "#d7301f",
       lineWidth: 1.1,
       ringSpacing: 80,
       hideTierNumbers: false,
+      hideLines: false,
+      anonymize: false,
     },
   }),
   RES = 1,
@@ -137,7 +139,14 @@ function load() {
       d = JSON.parse(saved || localStorage.getItem(LEGACY_STORAGE_KEY));
     if (!d || !d.S || !d.S.people.length) return false;
     S = d.S;
-    G = Object.assign(newG(), d.G);
+    const defaults = newG(),
+      appearance = Object.assign(
+        {},
+        defaults.appearance,
+        d.G && d.G.appearance,
+      );
+    G = Object.assign(defaults, d.G);
+    G.appearance = appearance;
     delete G.groupOrder;
     tiers = d.tiers || DEF.slice();
     if (!d.v)
@@ -803,7 +812,8 @@ function draw() {
     bg = v("--bg"),
     ac = v("--ac"),
     hr = v("--hr"),
-    d = devicePixelRatio || 1;
+    d = devicePixelRatio || 1,
+    homeAlpha = document.body.classList.contains("home") ? 0.4 : 1;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.setTransform(d * T.k, 0, 0, d * T.k, d * T.x, d * T.y);
@@ -874,6 +884,7 @@ function draw() {
     ctx.fillStyle = col + "24";
     ctx.shadowColor = col + "20";
     ctx.shadowBlur = 24;
+    ctx.globalAlpha = homeAlpha;
     ctx.fill();
     ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
@@ -881,19 +892,22 @@ function draw() {
     ctx.font = "600 12px system-ui";
     ctx.textAlign = "center";
     ctx.fillText(G.names[g], sx / c, my - 46);
+    ctx.globalAlpha = 1;
   });
-  nodes.forEach((n) => {
-    if (n.rel != null && n.id !== ctr)
-      edge(byId[ctr], n, n.rel, tx, mu, hr, bg);
-  });
-  links.forEach((l) => edge(l.source, l.target, l.t, tx, mu, hr, bg));
+  if (!G.appearance.hideLines) {
+    nodes.forEach((n) => {
+      if (n.rel != null && n.id !== ctr)
+        edge(byId[ctr], n, n.rel, tx, mu, hr, bg);
+    });
+    links.forEach((l) => edge(l.source, l.target, l.t, tx, mu, hr, bg));
+  }
   nodes.forEach((n) => {
     if (onboarding && step === 0 && n.id === ctr) return;
     const you = n.id === ctr,
       p = S.people.find((p) => p.id === n.id),
       fixed = p && getPos(p),
       col = gOf[n.id] ? gcol(gOf[n.id]) : tx,
-      displayName = onboarding && step === 0 && you ? "Sircles" : n.name;
+      displayName = G.appearance.anonymize && !you ? "~~~~" : n.name;
     const nameSize = G.appearance.nameSize + (you ? 2 : 0);
     ctx.font = (fixed ? "700 " : "") + nameSize + "px system-ui";
     ctx.textAlign = "center";
@@ -903,6 +917,7 @@ function draw() {
     ctx.lineWidth = Math.max(6, nameSize * 0.75);
     ctx.lineJoin = "round";
     ctx.strokeStyle = bg;
+    ctx.globalAlpha = homeAlpha;
     ctx.strokeText(displayName, n.x, n.y);
     if (
       selectedPeople.has(n.id) ||
@@ -928,6 +943,7 @@ function draw() {
       ctx.lineTo(n.x + w - 8, n.y + 11);
       ctx.stroke();
     }
+    ctx.globalAlpha = 1;
     ctx.textBaseline = "alphabetic";
   });
   if (onboardingRingFade) {
@@ -1170,6 +1186,7 @@ function pick(a, b, e) {
   k.dataset.kind = "relationship";
   k.innerHTML =
     `<div class="mu">${esc(nm(a))} – ${esc(nm(b))}</div>` +
+    `<div class="mu relationship-help">Choose a number 1 to ${tiers.length}</div>` +
     tc(cur, { a, b });
   place(k, e, 260, 130);
 }

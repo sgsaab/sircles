@@ -16,6 +16,8 @@ This project handles the following:
 - Text-entry relationship tiers (including decimals, with colors assigned by whole-number band), plus romantic and ended relationship buttons
 - Guided setup reveals the social map one ring at a time
 - Appearance controls for tier colors, ring-number visibility, name size, line thickness, and ring spacing
+- Hide relationship lines or anonymize map labels (while keeping You visible)
+- Return home and continue a saved map
 - Right-click the map for quick actions such as fit, relax, and reset groups
 - Resizable side panel (expandable to full screen): People, Groups, Appearance, Data
 - CSV import/export (single file), plus autosave to `localStorage`.

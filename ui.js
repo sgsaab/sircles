@@ -118,6 +118,8 @@ function appearanceView() {
     range("Line thickness", "lineWidth", lineWidth, 0.5, 4, 0.1, "px") +
     range("Ring spacing", "ringSpacing", ringSpacing, 40, 180, 5, "px") +
     `<label class="row"><span class="n">Hide tier numbers</span><input type="checkbox" data-act="hideTierNumbers"${G.appearance.hideTierNumbers ? " checked" : ""}></label>` +
+    `<label class="row"><span class="n">Hide relationship lines</span><input type="checkbox" data-act="hideLines"${G.appearance.hideLines ? " checked" : ""}></label>` +
+    `<label class="row"><span class="n">Anonymize names on map</span><input type="checkbox" data-act="anonymize"${G.appearance.anonymize ? " checked" : ""}></label>` +
     `<p class="mu">Tier 1 is closest to the center</p>` +
     `<div class="row"><span class="n">Gradient</span>${sw("tca", G.tcol.a)}<span style="flex:1;height:12px;border-radius:6px;background:linear-gradient(90deg,${tiers.map((_, i) => tierColor(i + 1)).join(",")})"></span>${sw("tcb", G.tcol.b)}</div>` +
     tiers
@@ -409,6 +411,11 @@ $("#side").addEventListener("change", (e) => {
     save();
     dirty = true;
     draw();
+  } else if (d.act === "hideLines" || d.act === "anonymize") {
+    G.appearance[d.act] = t.checked;
+    save();
+    dirty = true;
+    draw();
   } else if (
     d.act === "nameSize" ||
     d.act === "lineWidth" ||
@@ -446,10 +453,25 @@ const PR = [
   ],
   ["Who else makes up your closest ~15?", "The people you see weekly."],
 ];
-const INTRO = `<h1 class="splash-title">Sircles</h1><button class="splash-node" id="go" data-splash-index="0">Start</button><button class="splash-node" id="exm" data-splash-index="1">Try example data</button><button class="splash-node" id="skipIntro" data-splash-index="2">Skip onboarding</button>`;
+function introMarkup() {
+  const canContinue = hasStoredMap(),
+    exampleIndex = canContinue ? 2 : 1,
+    skipIndex = exampleIndex + 1;
+  return `<h1 class="splash-title">Sircles</h1><button class="splash-node" id="go" data-splash-index="0">Start</button>${canContinue ? '<button class="splash-node" id="continue" data-splash-index="1">Continue your map</button>' : ""}<button class="splash-node" id="exm" data-splash-index="${exampleIndex}">Try example data</button><button class="splash-node" id="newMap" data-splash-index="${skipIndex}">New map</button>`;
+}
 let splashPositions = null,
   splashDrag = null,
+  splashReturnView = null,
   suppressSplashClick = false;
+function hasStoredMap() {
+  return (
+    S.people.length > 0 &&
+    !!(
+      localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem(LEGACY_STORAGE_KEY)
+    )
+  );
+}
 function positionSplashNodes() {
   if (step !== 0 || !document.body.classList.contains("onb")) return;
   const rect = cv.getBoundingClientRect(),
@@ -458,11 +480,19 @@ function positionSplashNodes() {
     radius = R(2) * T.k;
   if (!splashPositions) {
     const sideOffset = (Math.sqrt(3) * radius) / 2;
-    splashPositions = [
-      { x: -sideOffset / T.k, y: radius / 2 / T.k },
-      { x: 0, y: radius / T.k },
-      { x: sideOffset / T.k, y: radius / 2 / T.k },
-    ];
+    splashPositions =
+      document.querySelectorAll(".splash-node").length === 4
+        ? [
+            { x: -sideOffset / T.k, y: radius / 2 / T.k },
+            { x: -radius / 2 / T.k, y: sideOffset / T.k },
+            { x: radius / 2 / T.k, y: sideOffset / T.k },
+            { x: sideOffset / T.k, y: radius / 2 / T.k },
+          ]
+        : [
+            { x: -sideOffset / T.k, y: radius / 2 / T.k },
+            { x: 0, y: radius / T.k },
+            { x: sideOffset / T.k, y: radius / 2 / T.k },
+          ];
   }
   const title = $("#ob .splash-title");
   title.style.left = centerX + "px";
@@ -541,14 +571,41 @@ function startOnboarding() {
   obRender();
 }
 function endOnboarding() {
+  const returnView = splashReturnView;
+  splashReturnView = null;
   document.body.classList.remove("onb");
+  document.body.classList.remove("home");
   cv.classList.remove("h");
   $("#ob").className = "";
   busy = false;
-  setTimeout(() => view(W / 2, H / 2, 1, 600), 60);
+  setTimeout(
+    () =>
+      returnView
+        ? view(returnView.x, returnView.y, returnView.k, 600)
+        : view(W / 2, H / 2, 1, 600),
+    60,
+  );
 }
 function skipOnboarding() {
   endOnboarding();
+}
+async function clearMapAfterConfirmation() {
+  if (
+    S.people.length &&
+    (await ask("Are you sure? You’ll clear all previous data.", [
+      "Cancel",
+      "Clear and start over",
+    ])) !== 1
+  )
+    return false;
+  resetAll();
+  commit();
+  return true;
+}
+function showHome() {
+  splashReturnView = { x: T.x, y: T.y, k: T.k };
+  document.body.classList.add("home");
+  startOnboarding();
 }
 function fitOnboarding() {
   const c = document.querySelector("#ob>div");
@@ -576,21 +633,44 @@ function obRender() {
     o.className = "splash";
     size();
     cv.classList.remove("h");
-    o.innerHTML = INTRO;
+    o.innerHTML = introMarkup();
     view(W / 2, H / 2, 1);
     document.querySelectorAll(".splash-node").forEach(configureSplashNode);
     positionSplashNodes();
-    $("#go").onclick = () => {
+    $("#go").onclick = async () => {
       if (suppressSplashClick) return;
+      if (S.people.length) {
+        if (!(await clearMapAfterConfirmation())) return;
+      } else {
+        resetAll();
+        commit();
+      }
+      document.body.classList.remove("home");
       cv.classList.add("h");
       step = 1;
       obRender();
     };
+    const continueButton = $("#continue");
+    if (continueButton)
+      continueButton.onclick = () => {
+        if (!suppressSplashClick) endOnboarding();
+      };
     $("#exm").onclick = () => {
-      if (!suppressSplashClick) example();
+      if (suppressSplashClick) return;
+      splashReturnView = null;
+      example();
     };
-    $("#skipIntro").onclick = () => {
-      if (!suppressSplashClick) skipOnboarding();
+    $("#newMap").onclick = async () => {
+      if (suppressSplashClick) return;
+      if (S.people.length) {
+        if (!(await clearMapAfterConfirmation())) return;
+      } else {
+        resetAll();
+        commit();
+      }
+      splashReturnView = null;
+      document.body.classList.remove("home");
+      skipOnboarding();
     };
     return;
   }
@@ -657,17 +737,9 @@ function obRender() {
   };
 }
 window.addEventListener("resize", positionSplashNodes);
+$("#hb").onclick = showHome;
 $("#rb").onclick = async () => {
-  if (
-    S.people.length &&
-    (await ask("Are you sure? You’ll clear all previous data.", [
-      "Cancel",
-      "Clear and start over",
-    ])) !== 1
-  )
-    return;
-  resetAll();
-  commit();
+  if (!(await clearMapAfterConfirmation())) return;
   startOnboarding();
 };
 
