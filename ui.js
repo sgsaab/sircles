@@ -76,13 +76,40 @@ function render() {
           : dataView();
 }
 function peopleView() {
+  const centeredPerson =
+      ctr === "you" ? null : S.people.find((person) => person.id === ctr),
+    people = centeredPerson
+      ? [
+          { id: "you", name: "You", person: centeredPerson },
+          ...S.people
+            .filter((person) => person.id !== ctr)
+            .map((person) => ({ id: person.id, name: person.name, person })),
+        ]
+      : S.people.map((person) => ({
+          id: person.id,
+          name: person.name,
+          person,
+        }));
   return (
     `<div class="row"><input id="np" placeholder="Add a person…" style="flex:1"><button data-act="addp" class="p">Add</button></div>` +
-    (S.people
-      .map(
-        (p) =>
-          `<div class="row${selectedPeople.has(p.id) || p.id === sel ? " s" : ""}"><span class="n" data-lv="${p.id}" title="Choose friendship levels" style="${getPos(p) ? "font-weight:700" : ""}">${esc(p.name)}</span>${tc(p.tier, { a: p.id, b: "you" })}<button data-act="del" data-id="${p.id}">✕</button></div>`,
-      )
+    (centeredPerson
+      ? `<p class="mu relationship-help">Relationships with ${esc(centeredPerson.name)}</p>`
+      : "") +
+    (people
+      .map(({ id, name, person }) => {
+        const relationship = centeredPerson
+          ? id === "you"
+            ? centeredPerson.tier
+            : (getL(ctr, id) || {}).t
+          : person.tier;
+        const relationshipTo =
+          centeredPerson && id !== "you"
+            ? { a: ctr, b: id }
+            : centeredPerson
+              ? { a: ctr, b: "you" }
+              : { a: id, b: "you" };
+        return `<div class="row${person && (selectedPeople.has(id) || id === sel) ? " s" : ""}"><span class="n"${person ? ` data-lv="${id}" title="Choose friendship levels" style="${getPos(person) ? "font-weight:700" : ""}"` : ""}>${esc(name)}</span>${tc(relationship, relationshipTo)}${person ? `<button data-act="del" data-id="${id}">✕</button>` : ""}</div>`;
+      })
       .join("") || '<p class="mu">No people yet.</p>')
   );
 }
