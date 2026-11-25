@@ -41,6 +41,20 @@ document.addEventListener("change", (e) => {
   if (e.target.matches(".ti"))
     tcApply(e.target.closest(".tc"), e.target.value.trim());
 });
+document.addEventListener("keydown", (e) => {
+  const input = e.target;
+  if (
+    e.key !== "Enter" ||
+    !(input instanceof Element) ||
+    !input.matches("#pk .ti")
+  )
+    return;
+  e.preventDefault();
+  if (input.value.trim() === input.defaultValue.trim()) {
+    $("#pk").style.display = "none";
+    linkFrom = null;
+  } else tcApply(input.closest(".tc"), input.value.trim());
+});
 
 /* ---------- side panel ---------- */
 function render() {

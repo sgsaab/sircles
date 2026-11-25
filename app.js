@@ -1189,6 +1189,9 @@ function pick(a, b, e) {
     `<div class="mu relationship-help">Choose a number 1 to ${tiers.length}</div>` +
     tc(cur, { a, b });
   place(k, e, 260, 130);
+  const input = k.querySelector(".ti");
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
 }
 function showPanel() {
   $("#side").classList.remove("hid");
