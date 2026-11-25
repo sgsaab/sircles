@@ -1169,7 +1169,6 @@ function pick(a, b, e) {
     k = $("#pk");
   k.dataset.kind = "relationship";
   k.innerHTML =
-    `<div class="mu relationship-help">Choose a number 1 to ${tiers.length}</div>` +
     `<div class="mu">${esc(nm(a))} – ${esc(nm(b))}</div>` +
     tc(cur, { a, b });
   place(k, e, 260, 130);
