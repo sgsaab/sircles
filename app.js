@@ -21,6 +21,8 @@ const TC0 = "#d7301f",
       hideTierNumbers: false,
       hideLines: false,
       anonymize: false,
+      hideGroupNames: false,
+      groupTransparency: 86,
     },
   }),
   RES = 1,
@@ -881,17 +883,24 @@ function draw() {
       ),
     );
     ctx.closePath();
-    ctx.fillStyle = col + "24";
-    ctx.shadowColor = col + "20";
+    const groupOpacity = (100 - G.appearance.groupTransparency) / 100,
+      alphaHex = (alpha) =>
+        Math.round(alpha * 255)
+          .toString(16)
+          .padStart(2, "0");
+    ctx.fillStyle = col + alphaHex(groupOpacity);
+    ctx.shadowColor = col + alphaHex(groupOpacity * 0.9);
     ctx.shadowBlur = 24;
     ctx.globalAlpha = homeAlpha;
     ctx.fill();
     ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
-    ctx.fillStyle = col;
-    ctx.font = "600 12px system-ui";
-    ctx.textAlign = "center";
-    ctx.fillText(G.names[g], sx / c, my - 46);
+    if (!G.appearance.hideGroupNames) {
+      ctx.fillStyle = col;
+      ctx.font = "600 12px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText(G.names[g], sx / c, my - 46);
+    }
     ctx.globalAlpha = 1;
   });
   if (!G.appearance.hideLines) {

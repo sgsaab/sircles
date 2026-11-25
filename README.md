@@ -10,12 +10,13 @@ This project handles the following:
 - Automatic friend group clustering, editable as well
 - People can belong to more than one group; groups can be created and edited
 - Center on anyone to see the map from their point of view
+- Search for existing people or create new people directly when adding group members
 - Shift-click to define a relationship or select and drag a group together
 - Move, drag, and relax to place or release people
 - Shuffle setup to explore a fresh formula-aligned layout without pinning people
 - Text-entry relationship tiers (including decimals, with colors assigned by whole-number band), plus romantic and ended relationship buttons
 - Guided setup reveals the social map one ring at a time
-- Appearance controls for tier colors, ring-number visibility, name size, line thickness, and ring spacing
+- Appearance controls for tier colors, group-name visibility and transparency, ring-number visibility, name size, line thickness, and ring spacing
 - Hide relationship lines or anonymize map labels (while keeping You visible)
 - Return home and continue a saved map
 - Right-click the map for quick actions such as fit, relax, and reset groups

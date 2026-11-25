@@ -137,16 +137,19 @@ function groupsView() {
     (ids
       .map((g) => {
         const members = groups[g] || new Set();
-        return `<div class="row group-row" style="flex-wrap:wrap"><input type="color" data-act="gcolor" data-g="${esc(g)}" value="${gcol(g)}" style="width:34px;padding:1px"><input data-act="gname" data-g="${esc(g)}" value="${esc(G.names[g] || "")}" style="flex:1"><button data-act="gdel" data-g="${esc(g)}" title="Delete group">✕</button><div style="width:100%">${[...members].map((id) => `<span class="chip" data-act="grem" data-g="${esc(g)}" data-id="${esc(id)}" title="Remove from group">${esc(nm(id))} ✕</span>`).join("")}<select data-act="gadd" data-g="${esc(g)}"><option value="">+ add person</option>${S.people
+        const suggestions = S.people
           .filter((person) => !members.has(person.id))
-          .map(
-            (person) =>
-              `<option value="${esc(person.id)}">${esc(person.name)}</option>`,
-          )
-          .join("")}</select></div></div>`;
+          .map((person) => `<option value="${esc(person.name)}"></option>`)
+          .join("");
+        return `<div class="row group-row" style="flex-wrap:wrap"><input type="color" data-act="gcolor" data-g="${esc(g)}" value="${gcol(g)}" style="width:34px;padding:1px"><input data-act="gname" data-g="${esc(g)}" value="${esc(G.names[g] || "")}" style="flex:1"><button data-act="gdel" data-g="${esc(g)}" title="Delete group">✕</button><div style="width:100%">${[...members].map((id) => `<span class="chip" data-act="grem" data-g="${esc(g)}" data-id="${esc(id)}" title="Remove from group">${esc(nm(id))} ✕</span>`).join("")}<div class="group-add"><input type="search" data-act="gsearch" data-g="${esc(g)}" list="gpeople-${esc(g)}" placeholder="Search people…" aria-label="Search people to add to ${esc(G.names[g] || g)}"><datalist id="gpeople-${esc(g)}">${suggestions}</datalist><button type="button" data-act="gadd" data-g="${esc(g)}">Add to group</button><button type="button" data-act="gnewperson" data-g="${esc(g)}">New person</button></div></div></div>`;
       })
       .join("") || '<p class="mu">No groups yet — make one with New group.</p>')
   );
+}
+function addPersonToGroup(groupId, person) {
+  const lockedGroupId = lockGroup(groupId);
+  if (person.g === "-" || !gOf[person.id]) person.g = lockedGroupId;
+  else person.gs = [...new Set([...(person.gs || []), lockedGroupId])];
 }
 function appearanceView() {
   const sw = (act, v, x = "") =>
@@ -158,9 +161,19 @@ function appearanceView() {
     range("Name size", "nameSize", nameSize, 9, 24, 1, "px") +
     range("Line thickness", "lineWidth", lineWidth, 0.5, 4, 0.1, "px") +
     range("Ring spacing", "ringSpacing", ringSpacing, 40, 180, 5, "px") +
+    range(
+      "Group color transparency",
+      "groupTransparency",
+      G.appearance.groupTransparency,
+      0,
+      100,
+      1,
+      "%",
+    ) +
     `<label class="row"><span class="n">Hide tier numbers</span><input type="checkbox" data-act="hideTierNumbers"${G.appearance.hideTierNumbers ? " checked" : ""}></label>` +
     `<label class="row"><span class="n">Hide relationship lines</span><input type="checkbox" data-act="hideLines"${G.appearance.hideLines ? " checked" : ""}></label>` +
     `<label class="row"><span class="n">Anonymize names on map</span><input type="checkbox" data-act="anonymize"${G.appearance.anonymize ? " checked" : ""}></label>` +
+    `<label class="row"><span class="n">Hide group names</span><input type="checkbox" data-act="hideGroupNames"${G.appearance.hideGroupNames ? " checked" : ""}></label>` +
     `<p class="mu">Tier 1 is closest to the center</p>` +
     `<div class="row"><span class="n">Gradient</span>${sw("tca", G.tcol.a)}<span style="flex:1;height:12px;border-radius:6px;background:linear-gradient(90deg,${tiers.map((_, i) => tierColor(i + 1)).join(",")})"></span>${sw("tcb", G.tcol.b)}</div>` +
     tiers
@@ -337,6 +350,49 @@ $("#side").addEventListener("click", async (e) => {
     if (person.g === groupId) person.g = "-";
     person.gs = (person.gs || []).filter((id) => id !== groupId);
     commit();
+  } else if (d.act === "gadd" || d.act === "gnewperson") {
+    const input = [...$("#bd").querySelectorAll('[data-act="gsearch"]')].find(
+        (field) => field.dataset.g === d.g,
+      ),
+      name = input.value.trim();
+    input.setCustomValidity("");
+    if (!name) {
+      input.setCustomValidity(
+        d.act === "gadd"
+          ? "Choose an existing person from the suggestions."
+          : "Enter a name for the new person.",
+      );
+      input.reportValidity();
+      return;
+    }
+    const person = S.people.find(
+      (candidate) =>
+        candidate.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
+    );
+    if (d.act === "gadd") {
+      if (!person || groups[d.g]?.has(person.id)) {
+        input.setCustomValidity(
+          person
+            ? "This person is already in the group."
+            : "Select an existing person from the suggestions.",
+        );
+        input.reportValidity();
+        return;
+      }
+      addPersonToGroup(d.g, person);
+    } else {
+      if (person) {
+        input.setCustomValidity(
+          "A person with this name already exists. Add that person instead.",
+        );
+        input.reportValidity();
+        return;
+      }
+      const newPerson = { id: uid(), name, tier: null };
+      S.people.push(newPerson);
+      addPersonToGroup(d.g, newPerson);
+    }
+    commit();
   } else if (d.act === "gdel") {
     if (
       (await ask("Delete this group? Its members become ungrouped.", [
@@ -416,14 +472,6 @@ $("#side").addEventListener("change", (e) => {
     save();
     dirty = true;
     draw();
-  } else if (d.act === "gadd") {
-    if (t.value) {
-      const groupId = lockGroup(d.g);
-      const person = S.people.find((p) => p.id === t.value);
-      if (person.g === "-" || !gOf[person.id]) person.g = groupId;
-      else person.gs = [...new Set([...(person.gs || []), groupId])];
-      commit();
-    }
   } else if (d.act === "pgrp") {
     const p = S.people.find((p) => p.id === lv);
     if (t.value === "") delete p.g;
@@ -452,7 +500,11 @@ $("#side").addEventListener("change", (e) => {
     save();
     dirty = true;
     draw();
-  } else if (d.act === "hideLines" || d.act === "anonymize") {
+  } else if (
+    d.act === "hideLines" ||
+    d.act === "anonymize" ||
+    d.act === "hideGroupNames"
+  ) {
     G.appearance[d.act] = t.checked;
     save();
     dirty = true;
@@ -460,7 +512,8 @@ $("#side").addEventListener("change", (e) => {
   } else if (
     d.act === "nameSize" ||
     d.act === "lineWidth" ||
-    d.act === "ringSpacing"
+    d.act === "ringSpacing" ||
+    d.act === "groupTransparency"
   ) {
     G.appearance[d.act] = Number(t.value);
     save();
