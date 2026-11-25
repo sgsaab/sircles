@@ -24,6 +24,7 @@ button{cursor:pointer}button.p{background:var(--ac);color:#fff;border-color:var(
 .group-actions{display:flex;gap:8px}.group-actions>button{flex:1}
 #tb{position:absolute;top:12px;left:12px;display:flex;gap:8px;align-items:center}
 #bn{position:absolute;top:56px;left:12px;max-width:440px;background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:10px 12px;display:none}
+#bn #dn{padding:2px 6px;font-size:12px;vertical-align:middle}
 #pk,#cm{position:absolute;display:none;background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:6px;flex-direction:column;gap:4px;z-index:5;max-width:260px;box-shadow:0 4px 16px #0002}
 #pk>button,#cm>button{text-align:left}
 #cm{z-index:10;min-width:180px}

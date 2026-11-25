@@ -1213,7 +1213,7 @@ function banner() {
   else if (linkMode)
     h =
       (intro
-        ? "Here’s your map… but it revolves around <b>you</b> — not that that’s a bad thing! "
+        ? "Here’s your map… but it revolves around <b>you</b>. (not that that’s a bad thing)! "
         : "") +
       `Tap two people to link them <button class="p" id="dn">Done</button>`;
   b.style.display = h ? "block" : "none";
